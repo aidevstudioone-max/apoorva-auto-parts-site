@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
       e.preventDefault();
       if (!enquiryForm.reportValidity()) return;
       const name = document.getElementById('enqName').value.trim();
-      const subject = encodeURIComponent(`Part Enquiry from ${name} — Shanti Auto Parts Website`);
+      const subject = encodeURIComponent(`Part Enquiry from ${name} — Apoorva Auto Parts Website`);
       const body = encodeURIComponent(buildEnquiryMessage());
       window.location.href = `mailto:${ownerEmail}?subject=${subject}&body=${body}`;
     });
