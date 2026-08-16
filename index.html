@@ -115,7 +115,7 @@
     </div>
 
     <div class="hero-card">
-      <div class="hero-card-badge">Genuine Parts</div>
+      <div class="hero-card-badge">Genuine Parts <span id="lottieSpark" class="lottie-spark" aria-hidden="true"></span></div>
       <div class="hero-card-icon"><svg class="icon"><use href="#icon-engine"/></svg></div>
       <h3>Right Part, Right Price</h3>
       <p>Quality replacement parts for regular maintenance, repairs and replacement — with expert help to find the right fit.</p>
@@ -451,5 +451,11 @@
 </footer>
 
 <script src="script.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lottie-web@5.12.2/build/player/lottie.min.js"></script>
+<script>
+  fetch('lottie/pulse-spark.json').then((r) => r.json()).then((data) => {
+    if (window.lottie) lottie.loadAnimation({ container: document.getElementById('lottieSpark'), renderer: 'svg', loop: true, autoplay: true, animationData: data });
+  }).catch(() => {});
+</script>
 </body>
 </html>

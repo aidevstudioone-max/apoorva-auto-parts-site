@@ -247,6 +247,15 @@ h1, h2, h3, .logo-text, .hero-card h3, .rating-big h3, .badge-item strong,
   border-radius: 999px;
   letter-spacing: 0.6px;
   text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.lottie-spark {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
 }
 .hero-card-icon {
   width: 90px; height: 90px;
