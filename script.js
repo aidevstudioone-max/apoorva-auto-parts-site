@@ -128,7 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const supportsHoverTilt = window.matchMedia('(hover: hover) and (pointer: fine)').matches
     && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (supportsHoverTilt) {
-    document.querySelectorAll('.category-tile, .product-card').forEach(card => {
+    document.querySelectorAll('.category-tile, .product-card, .about-emoji-grid span').forEach(card => {
       const lift = card.classList.contains('product-card') ? -6 : -4;
       card.addEventListener('pointermove', (e) => {
         const rect = card.getBoundingClientRect();

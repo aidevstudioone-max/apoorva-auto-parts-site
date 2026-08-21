@@ -420,8 +420,17 @@ h1, h2, h3, .logo-text, .hero-card h3, .rating-big h3, .badge-item strong,
   display: flex; align-items: center; justify-content: center;
   box-shadow: var(--shadow);
   color: var(--orange-dark);
+  transition: transform 0.12s ease-out, border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+  will-change: transform;
 }
-.about-emoji-grid span .icon { width: 40%; height: 40%; stroke-width: 1.4; }
+.about-emoji-grid span:hover {
+  transform: translateY(-3px);
+  border-color: var(--orange);
+  background: var(--orange-light);
+  box-shadow: var(--shadow-lg);
+}
+.about-emoji-grid span .icon { width: 40%; height: 40%; stroke-width: 1.4; transition: transform 0.15s ease; }
+.about-emoji-grid span:hover .icon { transform: scale(1.1); }
 
 .eyebrow { color: var(--orange-dark); font-weight: 700; font-size: 0.8rem; letter-spacing: 1.2px; text-transform: uppercase; }
 .about-copy h2 { font-size: clamp(1.8rem, 3.2vw, 2.3rem); margin: 12px 0 16px; line-height: 1.15; text-wrap: balance; }
