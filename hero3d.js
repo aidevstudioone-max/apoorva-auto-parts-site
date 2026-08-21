@@ -38,27 +38,31 @@ if (document.readyState === 'complete') {
 // A stylised, procedurally-built gear + bolt — no external 3D model files needed.
 function buildGearGroup() {
   const group = new THREE.Group();
-  const metal = new THREE.MeshStandardMaterial({ color: 0x2a2f38, metalness: 0.85, roughness: 0.32 });
-  const accent = new THREE.MeshStandardMaterial({ color: 0xff6a13, metalness: 0.55, roughness: 0.35 });
+  const metal = new THREE.MeshStandardMaterial({
+    color: 0x565d68, metalness: 0.55, roughness: 0.38, emissive: 0x0c0e11, emissiveIntensity: 0.4
+  });
+  const accent = new THREE.MeshStandardMaterial({
+    color: 0xff7a2e, metalness: 0.3, roughness: 0.4, emissive: 0xff6a13, emissiveIntensity: 0.22
+  });
 
-  const ring = new THREE.Mesh(new THREE.TorusGeometry(1.15, 0.22, 24, 48), metal);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(1.15, 0.3, 28, 56), metal);
   group.add(ring);
 
   const teethCount = 12;
   for (let i = 0; i < teethCount; i++) {
-    const tooth = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.26, 0.34), metal);
+    const tooth = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.46), metal);
     const angle = (i / teethCount) * Math.PI * 2;
-    tooth.position.set(Math.cos(angle) * 1.4, Math.sin(angle) * 1.4, 0);
+    tooth.position.set(Math.cos(angle) * 1.42, Math.sin(angle) * 1.42, 0);
     tooth.rotation.z = angle;
     group.add(tooth);
   }
 
-  const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.42, 32), accent);
+  const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.56, 32), accent);
   hub.rotation.x = Math.PI / 2;
   group.add(hub);
 
   const bolt = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.55, 6), metal);
-  bolt.position.set(2.15, -0.95, 0.25);
+  bolt.position.set(2.15, -0.95, 0.4);
   bolt.rotation.set(0.6, 0.3, 0.2);
   group.add(bolt);
 
@@ -80,15 +84,19 @@ function initHeroGear() {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
-  camera.position.set(0, 0.4, 5.2);
+  const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 100);
+  camera.position.set(2.6, 1.9, 4.4);
+  camera.lookAt(0, 0, 0);
 
-  scene.add(new THREE.AmbientLight(0x404040, 1.1));
-  const key = new THREE.DirectionalLight(0xffffff, 1.7);
-  key.position.set(3, 4, 5);
+  scene.add(new THREE.HemisphereLight(0xfff2e6, 0x2a1c12, 1.15));
+  const key = new THREE.DirectionalLight(0xffffff, 2.4);
+  key.position.set(3, 5, 4);
   scene.add(key);
-  const rim = new THREE.PointLight(0xff6a13, 7, 20);
-  rim.position.set(-3, -2, 3);
+  const fill = new THREE.DirectionalLight(0xffffff, 0.9);
+  fill.position.set(-4, 1.5, 2);
+  scene.add(fill);
+  const rim = new THREE.PointLight(0xff6a13, 4, 18);
+  rim.position.set(-2, -1.5, -3);
   scene.add(rim);
 
   const gearGroup = buildGearGroup();
@@ -112,12 +120,15 @@ function initHeroGear() {
   window.addEventListener('resize', resize);
   resize();
 
+  let spin = 0;
+  let tiltX = 0;
   let raf;
   function animate() {
     raf = requestAnimationFrame(animate);
-    gearGroup.rotation.z += 0.006;
-    gearGroup.rotation.x += (pointer.y * 0.3 - gearGroup.rotation.x) * 0.04;
-    gearGroup.rotation.y += (pointer.x * 0.3 - gearGroup.rotation.y) * 0.04;
+    spin += 0.008;
+    gearGroup.rotation.y = spin + pointer.x * 0.25;
+    tiltX += (pointer.y * 0.2 - tiltX) * 0.05;
+    gearGroup.rotation.x = tiltX;
     renderer.render(scene, camera);
   }
   document.addEventListener('visibilitychange', () => {
