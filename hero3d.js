@@ -35,36 +35,81 @@ if (document.readyState === 'complete') {
   window.addEventListener('load', start);
 }
 
-// A stylised, procedurally-built gear + bolt — no external 3D model files needed.
+// Builds a proper gear silhouette (flat tooth tips + valley notches, not a zigzag)
+// as an extrudable 2D shape with a bored centre hole.
+function buildGearShape(teethCount, rootR, tipR, boreR, toothFrac) {
+  const shape = new THREE.Shape();
+  const step = (Math.PI * 2) / teethCount;
+  const half = step * toothFrac * 0.5;
+  let started = false;
+  const lineTo = (angle, r) => {
+    const x = Math.cos(angle) * r;
+    const y = Math.sin(angle) * r;
+    if (!started) { shape.moveTo(x, y); started = true; } else shape.lineTo(x, y);
+  };
+  for (let i = 0; i < teethCount; i++) {
+    const c = i * step;
+    lineTo(c - step / 2, rootR);
+    lineTo(c - half, tipR);
+    lineTo(c + half, tipR);
+    lineTo(c + step / 2, rootR);
+  }
+  shape.closePath();
+  const hole = new THREE.Path();
+  hole.absarc(0, 0, boreR, 0, Math.PI * 2, true);
+  shape.holes.push(hole);
+  return shape;
+}
+
+function buildShadowTexture() {
+  const size = 128;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  const gradient = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+  gradient.addColorStop(0, 'rgba(20,14,10,0.5)');
+  gradient.addColorStop(1, 'rgba(20,14,10,0)');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, size, size);
+  return new THREE.CanvasTexture(canvas);
+}
+
+// A stylised, procedurally-built gear — no external 3D model files needed.
 function buildGearGroup() {
   const group = new THREE.Group();
   const metal = new THREE.MeshStandardMaterial({
-    color: 0x565d68, metalness: 0.55, roughness: 0.38, emissive: 0x0c0e11, emissiveIntensity: 0.4
+    color: 0x5b626e, metalness: 0.5, roughness: 0.3, emissive: 0x0c0e11, emissiveIntensity: 0.35
   });
   const accent = new THREE.MeshStandardMaterial({
-    color: 0xff7a2e, metalness: 0.3, roughness: 0.4, emissive: 0xff6a13, emissiveIntensity: 0.22
+    color: 0xff7a2e, metalness: 0.25, roughness: 0.36, emissive: 0xff6a13, emissiveIntensity: 0.3
+  });
+  const accentTrim = new THREE.MeshStandardMaterial({
+    color: 0xff6a13, metalness: 0.4, roughness: 0.28, emissive: 0xff6a13, emissiveIntensity: 0.18
   });
 
-  const ring = new THREE.Mesh(new THREE.TorusGeometry(1.15, 0.3, 28, 56), metal);
-  group.add(ring);
+  const shape = buildGearShape(12, 0.95, 1.2, 0.6, 0.6);
+  const gearGeo = new THREE.ExtrudeGeometry(shape, {
+    depth: 0.42, bevelEnabled: true, bevelThickness: 0.05, bevelSize: 0.04, bevelSegments: 2, curveSegments: 16
+  });
+  gearGeo.center();
+  const gearMesh = new THREE.Mesh(gearGeo, metal);
+  group.add(gearMesh);
 
-  const teethCount = 12;
-  for (let i = 0; i < teethCount; i++) {
-    const tooth = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.46), metal);
-    const angle = (i / teethCount) * Math.PI * 2;
-    tooth.position.set(Math.cos(angle) * 1.42, Math.sin(angle) * 1.42, 0);
-    tooth.rotation.z = angle;
-    group.add(tooth);
-  }
+  const trim = new THREE.Mesh(new THREE.TorusGeometry(0.66, 0.045, 12, 40), accentTrim);
+  group.add(trim);
 
-  const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.56, 32), accent);
+  const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.56, 0.56, 0.5, 32), accent);
   hub.rotation.x = Math.PI / 2;
   group.add(hub);
 
-  const bolt = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.55, 6), metal);
-  bolt.position.set(2.15, -0.95, 0.4);
-  bolt.rotation.set(0.6, 0.3, 0.2);
-  group.add(bolt);
+  const boltCount = 5;
+  for (let i = 0; i < boltCount; i++) {
+    const angle = (i / boltCount) * Math.PI * 2;
+    const bolt = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.16, 6), metal);
+    bolt.position.set(Math.cos(angle) * 0.36, Math.sin(angle) * 0.36, 0.33);
+    bolt.rotation.x = Math.PI / 2;
+    group.add(bolt);
+  }
 
   return group;
 }
@@ -73,23 +118,29 @@ function initHeroGear() {
   const canvas = document.getElementById('heroCanvas');
   const fallback = document.getElementById('heroIconFallback');
   if (!canvas || canvas.classList.contains('active')) return true;
-  const container = canvas.parentElement;
+
+  // Make the canvas visible (and the fallback icon hidden) before measuring
+  // it, otherwise clientWidth/clientHeight read 0 while display:none.
+  canvas.classList.add('active');
+  if (fallback) fallback.classList.add('js-hidden');
 
   let renderer;
   try {
     renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
   } catch (e) {
+    canvas.classList.remove('active');
+    if (fallback) fallback.classList.remove('js-hidden');
     return false;
   }
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 100);
-  camera.position.set(2.6, 1.9, 4.4);
+  const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 100);
+  camera.position.set(2.9, 2.1, 5.0);
   camera.lookAt(0, 0, 0);
 
   scene.add(new THREE.HemisphereLight(0xfff2e6, 0x2a1c12, 1.15));
-  const key = new THREE.DirectionalLight(0xffffff, 2.4);
+  const key = new THREE.DirectionalLight(0xffffff, 2.5);
   key.position.set(3, 5, 4);
   scene.add(key);
   const fill = new THREE.DirectionalLight(0xffffff, 0.9);
@@ -102,16 +153,24 @@ function initHeroGear() {
   const gearGroup = buildGearGroup();
   scene.add(gearGroup);
 
+  const shadowMesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(2.6, 2.6),
+    new THREE.MeshBasicMaterial({ map: buildShadowTexture(), transparent: true, depthWrite: false })
+  );
+  shadowMesh.rotation.x = -Math.PI / 2;
+  shadowMesh.position.y = -1.55;
+  scene.add(shadowMesh);
+
   const pointer = { x: 0, y: 0 };
-  container.addEventListener('pointermove', (e) => {
-    const rect = container.getBoundingClientRect();
+  canvas.addEventListener('pointermove', (e) => {
+    const rect = canvas.getBoundingClientRect();
     pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
     pointer.y = ((e.clientY - rect.top) / rect.height) * 2 - 1;
   });
 
   function resize() {
-    const w = container.clientWidth;
-    const h = container.clientHeight;
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
     if (!w || !h) return;
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
@@ -129,6 +188,7 @@ function initHeroGear() {
     gearGroup.rotation.y = spin + pointer.x * 0.25;
     tiltX += (pointer.y * 0.2 - tiltX) * 0.05;
     gearGroup.rotation.x = tiltX;
+    gearGroup.position.y = Math.sin(Date.now() * 0.0009) * 0.06;
     renderer.render(scene, camera);
   }
   document.addEventListener('visibilitychange', () => {
@@ -137,8 +197,6 @@ function initHeroGear() {
   });
 
   animate();
-  canvas.classList.add('active');
-  if (fallback) fallback.classList.add('js-hidden');
   return true;
 }
 
