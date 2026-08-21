@@ -90,6 +90,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const revealTargets = document.querySelectorAll('.category-tile, .product-card, .enquiry-form, .about-copy, .about-media, .detail-card, .badge-item');
   revealTargets.forEach(el => el.classList.add('reveal'));
+  ['.category-grid', '.product-grid'].forEach(sel => {
+    const grid = document.querySelector(sel);
+    if (!grid) return;
+    Array.from(grid.children).forEach((el, i) => {
+      el.style.transitionDelay = `${(i % 6) * 70}ms`;
+    });
+  });
   const revealObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
@@ -99,4 +106,62 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }, { threshold: 0.1 });
   revealTargets.forEach(el => revealObserver.observe(el));
+
+  // Shop-by-category tiles jump to Products and pre-apply the matching filter.
+  document.querySelectorAll('.category-tile').forEach(tile => {
+    function activate() {
+      const target = tile.dataset.targetFilter || 'all';
+      const pill = filterPills ? filterPills.querySelector(`.pill-btn[data-filter="${target}"]`) : null;
+      if (pill) pill.click();
+      document.getElementById('products').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    tile.addEventListener('click', activate);
+    tile.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        activate();
+      }
+    });
+  });
+
+  // Cursor-follow 3D tilt on category tiles and product cards (pointer devices only).
+  const supportsHoverTilt = window.matchMedia('(hover: hover) and (pointer: fine)').matches
+    && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (supportsHoverTilt) {
+    document.querySelectorAll('.category-tile, .product-card').forEach(card => {
+      const lift = card.classList.contains('product-card') ? -6 : -4;
+      card.addEventListener('pointermove', (e) => {
+        const rect = card.getBoundingClientRect();
+        const px = (e.clientX - rect.left) / rect.width - 0.5;
+        const py = (e.clientY - rect.top) / rect.height - 0.5;
+        const rotateX = (-py * 10).toFixed(2);
+        const rotateY = (px * 10).toFixed(2);
+        card.style.transform = `perspective(700px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(${lift}px)`;
+      });
+      card.addEventListener('pointerleave', () => {
+        card.style.transform = '';
+      });
+    });
+  }
+
+  // Subtle parallax drift on the hero copy/card while the hero is in view.
+  const heroSection = document.getElementById('home');
+  const heroCopy = document.querySelector('.hero-copy');
+  const heroCard = document.querySelector('.hero-card');
+  if (heroSection && heroCopy && heroCard && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    let ticking = false;
+    window.addEventListener('scroll', () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        const rect = heroSection.getBoundingClientRect();
+        if (rect.bottom > 0 && rect.top < window.innerHeight) {
+          const progress = Math.min(Math.max(-rect.top / rect.height, 0), 1);
+          heroCopy.style.transform = `translateY(${progress * 20}px)`;
+          heroCard.style.transform = `translateY(${progress * -14}px)`;
+        }
+        ticking = false;
+      });
+    });
+  }
 });
